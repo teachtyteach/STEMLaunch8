@@ -38,7 +38,7 @@
   --radius:16px; --wrap:1160px; --band:clamp(56px,8vw,104px);
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
+
 body{background:var(--space);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--space)}
 a{color:var(--ink)}
@@ -69,6 +69,18 @@ p{margin:0}
 /* motion: one short rise on page change */
 @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .anim .rise{animation:rise .6s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0) * 70ms)}
+/* page-to-page: the old page fades up and out, the new one settles in; the menu pill glides to the new tab */
+.topbar{view-transition-name:topbar}
+.nav a[aria-current="page"]{view-transition-name:navpill}
+::view-transition-old(root){animation:vt-out .22s cubic-bezier(.4,0,1,1) both}
+::view-transition-new(root){animation:vt-in .45s cubic-bezier(.2,.7,.2,1) .05s both}
+::view-transition-group(navpill){animation-duration:.4s;animation-timing-function:cubic-bezier(.3,.8,.25,1)}
+::view-transition-old(topbar),::view-transition-new(topbar){animation:none}
+@keyframes vt-out{to{opacity:0;transform:translateY(-8px);filter:blur(2px)}}
+@keyframes vt-in{from{opacity:0;transform:translateY(14px)}}
+#app{transition:opacity .16s ease,transform .16s ease}
+#app.leaving{opacity:0;transform:translateY(-6px)}
+@media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
 
 /* top bar */
@@ -977,14 +989,22 @@ function render(animate){
   const navKey = r in CLASSES ? "classes" : r;
   document.querySelectorAll(".nav a").forEach(a=>{ if(a.getAttribute("href")==="#"+navKey) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
   document.title = (r==="home"?"":(r in CLASSES ? cName(r) : T(TITLES[r]))+" · ")+T("siteTitle");
-  if(animate==="scroll") window.scrollTo(0,0);
+  if(animate==="scroll") window.scrollTo({top:0,left:0,behavior:"instant"});
   drawStars();
   if(r==="gallery") lockerInit();
 }
-window.addEventListener("hashchange",()=>{ $("#nav").classList.remove("open"); $("#menuBtn").setAttribute("aria-expanded","false"); render("scroll"); });
+/* Smooth page changes: the browser's view transitions where supported, a quick fade elsewhere. */
+const reduceMotion = ()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
+function transition(update){
+  if(reduceMotion()) return update();
+  if(document.startViewTransition){ document.startViewTransition(update); return; }
+  const app=$("#app"); app.classList.add("leaving");
+  setTimeout(()=>{ update(); requestAnimationFrame(()=>app.classList.remove("leaving")); },160);
+}
+window.addEventListener("hashchange",()=>{ $("#nav").classList.remove("open"); $("#menuBtn").setAttribute("aria-expanded","false"); transition(()=>render("scroll")); });
 $("#menuBtn").addEventListener("click",e=>{const o=$("#nav").classList.toggle("open");e.currentTarget.setAttribute("aria-expanded",String(o))});
 document.addEventListener("click",async e=>{
-  const lb=e.target.closest("[data-lang]"); if(lb){ LANG=lb.dataset.lang; try{localStorage.setItem("stemLang",LANG)}catch{} applyStatic(); render(false); return; }
+  const lb=e.target.closest("[data-lang]"); if(lb){ if(lb.dataset.lang===LANG) return; LANG=lb.dataset.lang; try{localStorage.setItem("stemLang",LANG)}catch{} transition(()=>{ applyStatic(); render(false); }); return; }
   const f=e.target.closest("[data-filter]"); if(f){ dateFilter=f.dataset.filter; render(false); return; }
   if(e.target.closest("[data-lock]")){ LOCKER.K=null; LOCKER.photos=null; Object.values(LOCKER.urls).forEach(u=>u!=="x"&&URL.revokeObjectURL(u)); LOCKER.urls={}; try{sessionStorage.removeItem("stemLocker")}catch{} paintLocker(); return; }
   const b=e.target.closest(".copy"); if(!b) return;
