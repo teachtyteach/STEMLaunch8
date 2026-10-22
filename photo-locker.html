@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Photo Locker Admin</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{color-scheme:dark;--space:#08132B;--space-2:#0C1A3A;--panel:#11234C;--panel-2:#162C5C;--line:#24396E;--ink:#EEF2FF;--muted:#A6B4DA;--faint:#7385B5;--ignite:#FF6B3D;--ignite-2:#FF9A6B;--ok:#7EE08F;
+  --body:"IBM Plex Sans",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--space);color:var(--ink);font:16px/1.55 var(--body)}
+.wrap{max-width:1000px;margin:0 auto;padding:32px max(16px,env(safe-area-inset-right)) 80px max(16px,env(safe-area-inset-left))}
+h1{font-size:1.9rem;margin:0 0 6px}
+h2{font-size:1.2rem;margin:0}
+p{margin:0}
+.muted{color:var(--muted)}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;display:grid;gap:14px}
+.stack{display:grid;gap:20px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;font:600 .95rem var(--body);border:1px solid var(--line);color:var(--ink);background:var(--panel-2);cursor:pointer;text-decoration:none}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--ignite);border-color:var(--ignite);color:#1C0802}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.warn{border:1px solid var(--ignite);background:color-mix(in srgb,var(--ignite) 10%,var(--space));border-radius:12px;padding:12px 16px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{font:500 .95rem var(--body);background:none;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:8px 16px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ignite);border-color:var(--ignite);color:#1C0802}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.ph{background:var(--space-2);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:grid}
+.ph img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--panel)}
+.ph .f{padding:10px;display:grid;gap:8px}
+.ph input,.ph select{width:100%;font:inherit;font-size:.9rem;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+.ph.removed{opacity:.4}
+.ph label.rm{display:flex;gap:8px;align-items:center;font-size:.9rem;color:var(--muted)}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:28px;text-align:center;color:var(--muted)}
+.drop.over{border-color:var(--ignite);color:var(--ink)}
+table{border-collapse:collapse;width:100%}
+td,th{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:.92rem}
+th{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:500}
+td.code{font-family:var(--mono)}
+tr.off td{color:var(--faint);text-decoration:line-through}
+tr.off td:last-child{text-decoration:none}
+.tbl{max-height:460px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.status{font-family:var(--mono);font-size:.85rem;color:var(--muted);min-height:1.3em}
+.pending{position:sticky;bottom:0;background:var(--panel-2);border:1px solid var(--ignite);border-radius:14px;padding:16px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-top:20px}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--ignite);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap stack">
+  <header>
+    <span class="eyebrow">STEM Launch 8th Grade · Teachers only</span>
+    <h1>Photo Locker</h1>
+    <p class="muted">Add family-only photos to the website, remove them, and manage family codes. Everything is locked (encrypted) right here in your browser before it goes to GitHub.</p>
+  </header>
+
+  <section class="card" id="start">
+    <h2>1. Open the admin key</h2>
+    <p class="muted">Choose your <b>STEM-Launch-photo-locker-ADMIN-KEY.json</b> file. It never leaves this computer.</p>
+    <div class="row"><input type="file" id="keyFile" accept=".json,application/json"></div>
+    <p class="status" id="startStatus"></p>
+  </section>
+
+  <div id="app" class="stack" hidden>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="add">Add photos</button>
+      <button role="tab" aria-selected="false" data-tab="manage">Photos on the site</button>
+      <button role="tab" aria-selected="false" data-tab="codes">Family codes</button>
+    </div>
+
+    <section class="card" data-panel="add">
+      <h2>Add photos</h2>
+      <div class="warn">Before adding: check the photo opt-out list, don't put student names in captions, and keep captions about the activity.</div>
+      <div class="drop" id="drop">Drag photos here, or <label class="btn" for="photoFiles" style="display:inline-flex">choose photos</label>
+        <input type="file" id="photoFiles" accept="image/*" multiple hidden>
+        <p class="muted" style="margin-top:8px;font-size:.9rem">Photos are resized to 1600px and their hidden data (including GPS location) is removed.</p></div>
+      <div class="grid" id="newGrid"></div>
+    </section>
+
+    <section class="card" data-panel="manage" hidden>
+      <h2>Photos on the site</h2>
+      <p class="muted">Check a photo to take it down.</p>
+      <div class="grid" id="oldGrid"></div>
+    </section>
+
+    <section class="card" data-panel="codes" hidden>
+      <h2>Family codes</h2>
+      <p class="muted">Turning a code off stops it from working once you upload the update. You can turn it back on later.</p>
+      <div class="row"><button class="btn" id="addCodes">Add 10 more codes</button><button class="btn" id="dlCsv">Download codes (.csv)</button></div>
+      <div class="tbl"><table><thead><tr><th>#</th><th>Family code</th><th>Status</th></tr></thead><tbody id="codeRows"></tbody></table></div>
+    </section>
+
+    <div class="pending" id="pending" hidden>
+      <div><b id="pendingText"></b><p class="muted" style="font-size:.9rem">Download the update, unzip it, and upload the <b>locker</b> folder to your GitHub repo.</p></div>
+      <div class="row"><button class="btn primary" id="build">Download update (.zip)</button></div>
+    </div>
+    <p class="status" id="status"></p>
+  </div>
+</div>
+
+<script>
+const WORDS = "acorn amber anchor apple arrow aspen atlas atom badge bagel bamboo banjo barn beacon beaker bean bear beaver bell berry bison blaze bloom blue bobcat bolt bongo boulder breeze brick bridge brook bubble bucket buffalo cabin cactus camel canoe canvas canyon captain carbon cargo carrot castle cedar cello chalk cherry chess cinder circuit citrus clover cobalt cocoa comet compass condor copper coral cosmos cotton cougar coyote crane crater crayon cricket crystal cubic cyclone dahlia daisy delta desert diamond dingo dolphin dragon drum eagle easel echo eclipse elk ember emerald engine falcon fern ferret fiddle field finch flame flint forest fossil fox galaxy garnet gecko geyser ginger glacier globe goose granite grape gravity griffin grove gull hammer harbor hawk hazel heron hickory honey horizon husky iceberg igloo indigo iris island ivory jade jaguar jasper jelly jet jungle kayak kelp kettle kiwi koala lagoon lantern lark laser lava lemon lentil lily lime linen lion lizard llama lobster lotus lunar lynx magnet mango maple marble marlin meadow mesa meteor mint moose mosaic moss motor muffin nebula nectar neutron nickel nova nutmeg oak oasis ocean olive onyx orbit orca orchid otter owl panda papaya parrot peach pebble pecan pelican pepper photon pine pixel planet plasma plum polar pony poppy prairie prism proton puffin pulsar puzzle quartz quasar quill rabbit radar radish raven reef rhythm ridge river robin rocket rover ruby saddle sage salmon sandal satin saturn scout seal sensor sequoia shark sierra signal silver sketch sky sloth solar sonar spark sparrow sphinx spruce squid stable star stone storm summit sunny swan tango tiger timber toast topaz torch toucan tractor trail tulip tundra turtle valley vector velvet violet volt waffle walnut walrus wave willow wolf yeti zebra zephyr zinc".split(" ");
+const CLASSES = [["","Whole team"],["Math 8","Math 8"],["Accelerated Math 8","Accelerated Math 8"],["Science","Science"],["Engineering","Engineering"],["ELA","ELA"],["Social Studies","Social Studies"]];
+const S = {admin:null, K:null, keys:null, photos:[], adds:[], removed:new Set(), keysChanged:false, adminChanged:false};
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const u8b64 = u=>{let s="";for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
+const b64u8 = s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const rnd = n=>crypto.getRandomValues(new Uint8Array(n));
+const hex = u=>[...u].map(b=>b.toString(16).padStart(2,"0")).join("");
+async function enc(key,data){ const iv=rnd(12); const ct=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},key,data)); const o=new Uint8Array(12+ct.length); o.set(iv); o.set(ct,12); return o; }
+async function dec(key,u8){ return new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM",iv:u8.slice(0,12)},key,u8.slice(12))); }
+function parseCode(code){ const m=String(code).trim().toLowerCase().match(/^#?(\d+)\D*(.*)$/); return {n:String(+m[1]),mat:m[2].replace(/[^a-z0-9]/g,"")}; }
+async function wrapFor(code){
+  const c=parseCode(code), salt=rnd(16);
+  const base=await crypto.subtle.importKey("raw",new TextEncoder().encode(c.mat),"PBKDF2",false,["deriveKey"]);
+  const wk=await crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:S.admin.iter,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["encrypt"]);
+  return [c.n,{s:u8b64(salt),w:u8b64(await enc(wk,b64u8(S.admin.key)))}];
+}
+function pick(){ const a=new Uint32Array(1); crypto.getRandomValues(a); return a[0]; }
+const newCode = n=>`${n}-${[0,1,2].map(()=>WORDS[pick()%WORDS.length]).join("-")}-${String(pick()%10000).padStart(4,"0")}`;
+const status = t=>{$("#status").textContent=t};
+
+/* ---- open admin key ---- */
+$("#keyFile").addEventListener("change",async e=>{
+  const st=$("#startStatus");
+  try{
+    S.admin=JSON.parse(await e.target.files[0].text());
+    if(!S.admin.key||!S.admin.passwords) throw new Error("not a key");
+    S.K=await crypto.subtle.importKey("raw",b64u8(S.admin.key),"AES-GCM",false,["encrypt","decrypt"]);
+  }catch{ st.textContent="That isn't the photo locker admin key file."; return; }
+  st.textContent="Loading what's on the site…";
+  try{ S.keys=await (await fetch("locker/keys.json",{cache:"no-store"})).json(); }
+  catch{ st.textContent="Couldn't load locker/keys.json from this site. Open this page from your live website."; return; }
+  try{
+    const buf=new Uint8Array(await (await fetch("locker/manifest.bin",{cache:"no-store"})).arrayBuffer());
+    const m=JSON.parse(new TextDecoder().decode(await dec(S.K,buf)));
+    S.photos=m.photos||[];
+  }catch{ S.photos=[]; }
+  st.textContent=`Opened. ${S.photos.length} photo${S.photos.length===1?"":"s"} on the site, ${Object.keys(S.keys.entries).length} active family codes.`;
+  $("#app").hidden=false; renderCodes(); renderOld(); updatePending();
+});
+
+/* ---- tabs ---- */
+document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("[data-tab]").forEach(x=>x.setAttribute("aria-selected",x===b));
+  document.querySelectorAll("[data-panel]").forEach(p=>p.hidden=p.dataset.panel!==b.dataset.tab);
+}));
+
+/* ---- add photos ---- */
+async function shrink(file){
+  const bmp=await createImageBitmap(file,{imageOrientation:"from-image"}).catch(()=>createImageBitmap(file));
+  const sc=Math.min(1,1600/Math.max(bmp.width,bmp.height));
+  const c=document.createElement("canvas"); c.width=Math.round(bmp.width*sc); c.height=Math.round(bmp.height*sc);
+  c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+  return await new Promise(r=>c.toBlob(r,"image/jpeg",0.82)); // re-encoding drops EXIF/GPS
+}
+async function addFiles(files){
+  for(const f of files){
+    if(!f.type.startsWith("image/")) continue;
+    status("Preparing "+f.name+"…");
+    try{ const blob=await shrink(f); S.adds.push({id:hex(rnd(6)),blob,url:URL.createObjectURL(blob),caption:"",cls:""}); }
+    catch{ status("Couldn't read "+f.name+". Try a JPG or PNG."); }
+  }
+  status(""); renderNew(); updatePending();
+}
+$("#photoFiles").addEventListener("change",e=>{addFiles([...e.target.files]); e.target.value="";});
+const drop=$("#drop");
+drop.addEventListener("dragover",e=>{e.preventDefault();drop.classList.add("over")});
+drop.addEventListener("dragleave",()=>drop.classList.remove("over"));
+drop.addEventListener("drop",e=>{e.preventDefault();drop.classList.remove("over");addFiles([...e.dataTransfer.files]);});
+function clsSelect(v,attr){ return `<select ${attr}>${CLASSES.map(([val,l])=>`<option value="${esc(val)}"${val===v?" selected":""}>${esc(l)}</option>`).join("")}</select>`; }
+function renderNew(){
+  $("#newGrid").innerHTML=S.adds.map((a,i)=>`<div class="ph"><img src="${a.url}" alt=""><div class="f">
+    <input placeholder="Caption (no student names)" value="${esc(a.caption)}" data-cap="${i}" aria-label="Caption">
+    ${clsSelect(a.cls,`data-cls="${i}" aria-label="Class"`)}
+    <button class="btn" data-del="${i}">Remove</button></div></div>`).join("");
+}
+$("#newGrid").addEventListener("input",e=>{ const i=e.target.dataset.cap; if(i!==undefined) S.adds[i].caption=e.target.value; });
+$("#newGrid").addEventListener("change",e=>{ const i=e.target.dataset.cls; if(i!==undefined) S.adds[i].cls=e.target.value; });
+$("#newGrid").addEventListener("click",e=>{ const i=e.target.dataset.del; if(i!==undefined){ URL.revokeObjectURL(S.adds[i].url); S.adds.splice(i,1); renderNew(); updatePending(); } });
+
+/* ---- existing photos ---- */
+async function renderOld(){
+  const g=$("#oldGrid");
+  if(!S.photos.length){ g.innerHTML=`<p class="muted">No family photos on the site yet.</p>`; return; }
+  g.innerHTML=S.photos.map(p=>`<div class="ph${S.removed.has(p.f)?" removed":""}" id="o-${p.f}"><img alt=""><div class="f"><span style="font-size:.9rem">${esc(p.caption||"(no caption)")}</span><span class="muted" style="font-size:.8rem">${esc(p.cls||"Whole team")} · added ${esc(p.added||"")}</span>
+    <label class="rm"><input type="checkbox" data-rm="${p.f}"${S.removed.has(p.f)?" checked":""}> Take down</label></div></div>`).join("");
+  for(const p of S.photos){
+    try{ const img=await dec(S.K,new Uint8Array(await (await fetch("locker/"+p.f,{cache:"no-store"})).arrayBuffer()));
+      const el=document.querySelector(`#o-${CSS.escape(p.f)} img`); if(el) el.src=URL.createObjectURL(new Blob([img],{type:"image/jpeg"})); }catch{}
+  }
+}
+$("#oldGrid").addEventListener("change",e=>{ const f=e.target.dataset.rm; if(!f) return; e.target.checked?S.removed.add(f):S.removed.delete(f); e.target.closest(".ph").classList.toggle("removed",e.target.checked); updatePending(); });
+
+/* ---- codes ---- */
+function renderCodes(){
+  $("#codeRows").innerHTML=S.admin.passwords.map((p,i)=>`<tr class="${p.active?"":"off"}"><td>${p.n}</td><td class="code">${esc(p.pw)}</td><td><button class="btn" style="padding:4px 12px;font-size:.85rem" data-tog="${i}">${p.active?"Turn off":"Turn on"}</button></td></tr>`).join("");
+}
+$("#codeRows").addEventListener("click",async e=>{
+  const i=e.target.dataset.tog; if(i===undefined) return;
+  const p=S.admin.passwords[i]; e.target.disabled=true;
+  if(p.active){ delete S.keys.entries[String(p.n)]; p.active=false; }
+  else{ status("Turning on code "+p.n+"…"); const [n,ent]=await wrapFor(p.pw); S.keys.entries[n]=ent; p.active=true; status(""); }
+  S.keysChanged=S.adminChanged=true; renderCodes(); updatePending();
+});
+$("#addCodes").addEventListener("click",async e=>{
+  e.target.disabled=true;
+  const start=Math.max(0,...S.admin.passwords.map(p=>p.n))+1;
+  for(let n=start;n<start+10;n++){ status(`Creating code ${n}…`); const pw=newCode(n); const [k,ent]=await wrapFor(pw); S.keys.entries[k]=ent; S.admin.passwords.push({n,pw,active:true}); }
+  status("Added 10 codes. Download the update and the new admin key."); e.target.disabled=false;
+  S.keysChanged=S.adminChanged=true; renderCodes(); updatePending();
+});
+function download(name,blob){ const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000); }
+$("#dlCsv").addEventListener("click",()=>{
+  const rows=[["number","family code","status"],...S.admin.passwords.map(p=>[p.n,p.pw,p.active?"on":"off"])];
+  download("family-photo-codes.csv",new Blob([rows.map(r=>r.join(",")).join("\n")],{type:"text/csv"}));
+});
+
+/* ---- package ---- */
+function updatePending(){
+  const parts=[];
+  if(S.adds.length) parts.push(`${S.adds.length} photo${S.adds.length===1?"":"s"} to add`);
+  if(S.removed.size) parts.push(`${S.removed.size} to take down`);
+  if(S.keysChanged) parts.push("family code changes");
+  $("#pending").hidden=!parts.length; $("#pendingText").textContent="Ready to upload: "+parts.join(", ");
+}
+$("#build").addEventListener("click",async e=>{
+  e.target.disabled=true; status("Locking photos…");
+  try{
+    const zip=new JSZip(), dir=zip.folder("locker"), today=new Date().toISOString().slice(0,10);
+    const photos=S.photos.filter(p=>!S.removed.has(p.f));
+    for(const a of S.adds){
+      const f="p-"+hex(rnd(8))+".bin";
+      dir.file(f,await enc(S.K,new Uint8Array(await a.blob.arrayBuffer())));
+      photos.push({f,caption:a.caption.trim(),cls:a.cls,added:today,t:"image/jpeg"});
+    }
+    dir.file("manifest.bin",await enc(S.K,new TextEncoder().encode(JSON.stringify({photos}))));
+    dir.file("keys.json",JSON.stringify(S.keys));
+    download(`locker-update-${today}.zip`,await zip.generateAsync({type:"blob"}));
+    S.photos=photos; S.adds=[]; S.removed.clear(); S.keysChanged=false;
+    renderNew(); renderOld(); updatePending();
+    if(S.adminChanged){
+      download("STEM-Launch-photo-locker-ADMIN-KEY.json",new Blob([JSON.stringify(S.admin,null,1)],{type:"application/json"}));
+      S.adminChanged=false;
+      status("Downloaded the update and a NEW admin key. Replace your old admin key file with the new one.");
+    } else status("Downloaded. Unzip it and upload the locker folder to GitHub.");
+  }catch(err){ status("Something went wrong: "+err.message); }
+  e.target.disabled=false;
+});
+window.addEventListener("beforeunload",e=>{ if(!$("#pending").hidden){ e.preventDefault(); e.returnValue=""; } });
+</script>
+</body>
+</html>

@@ -22,6 +22,7 @@
   --font-display:"Archivo","Arial Narrow",Arial,sans-serif;
   --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --font-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --t-test:#FF6B3D; --t-trip:#62E0E8; --t-due:#EEF2FF; --t-off:#A6B4DA; --t-event:#9DB2FF; --t-note:#A6B4DA;
   --radius:14px; --wrap:1120px;
 }
 *{box-sizing:border-box}
@@ -114,17 +115,51 @@ a.card:hover{transform:translateY(-2px);border-color:var(--c,var(--ignite))}
 .txt a{color:var(--ignite-2)}
 
 /* date strip */
-.strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,1fr);gap:12px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x mandatory}
-.strip > *{scroll-snap-align:start}
-.date-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:start}
+.strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:12px}
+.date-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:stretch}
+.date-card > div:last-child{display:flex;flex-direction:column;gap:8px;min-width:0}
 .cal{width:56px;border-radius:10px;overflow:hidden;text-align:center;border:1px solid var(--line);background:var(--space)}
-.cal .m{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.12em;background:var(--ignite);color:var(--on-ignite);padding:3px 0;font-weight:600}
+.cal .m{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.12em;background:var(--tc,var(--ignite));color:var(--space);padding:3px 0;font-weight:600}
+.cal{align-self:start}
 .cal .d{font-family:var(--font-display);font-stretch:125%;font-weight:800;font-size:1.5rem;padding:4px 0 2px;line-height:1.1}
 .cal .w{font-family:var(--font-mono);font-size:.64rem;color:var(--muted);padding-bottom:4px;letter-spacing:.08em}
-.date-card h3{font-size:1rem;line-height:1.25;font-stretch:110%}
-.date-card .sub{font-size:.85rem;color:var(--muted);margin-top:6px}
+.date-card h3{font-size:1rem;line-height:1.25;font-stretch:105%;overflow-wrap:anywhere}
+.date-card .sub{font-size:.85rem;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.date-card .tags{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
 .date-card .chip{white-space:normal}
-.date-card .t{font-family:var(--font-mono);font-size:.78rem;color:var(--ignite-2);margin-top:8px;display:block}
+.date-card .t{font-family:var(--font-mono);font-size:.78rem;color:var(--muted);margin-top:auto}
+/* event types: solid = act on it, hatched = no school, outline = FYI */
+.ty-test{--tc:var(--t-test)} .ty-trip{--tc:var(--t-trip)} .ty-due{--tc:var(--t-due)}
+.ty-off{--tc:var(--t-off)} .ty-event{--tc:var(--t-event)} .ty-note{--tc:var(--t-note)}
+.type{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:6px;white-space:nowrap;background:var(--tc);color:var(--space);border:1px solid var(--tc);line-height:1.4}
+.type svg{width:12px;height:12px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.type.ty-off{background:var(--space);color:var(--ink);border-color:var(--t-off)}
+.type.ty-event,.type.ty-note{background:transparent;color:var(--tc);border-color:color-mix(in srgb,var(--tc) 55%,transparent)}
+.date-card.ty-off,.agenda li.ty-off,.note.ty-off{background:repeating-linear-gradient(135deg,var(--panel) 0 12px,var(--space-2) 12px 24px)}
+.cal .m{background:var(--tc,var(--ignite))}
+.ty-off .cal .m{background:var(--t-off);color:var(--space)}
+.ty-event .cal .m,.ty-note .cal .m{background:var(--panel-2);color:var(--tc)}
+.date-card.ty-test,.date-card.ty-trip,.date-card.ty-due{border-color:color-mix(in srgb,var(--tc) 45%,var(--line))}
+.cls{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:var(--muted);white-space:nowrap}
+.cls::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c)}
+.dot-h{display:flex;align-items:center;gap:10px}
+.dot-h::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--c);flex-shrink:0}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px}
+.filters button{display:inline-flex;align-items:center;gap:8px;font:500 .9rem var(--font-body);color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer}
+.filters button:hover{color:var(--ink)}
+.filters button[aria-pressed="true"]{color:var(--ink);border-color:var(--ignite);background:var(--panel-2)}
+.filters button i{font-style:normal;font-family:var(--font-mono);font-size:.78rem;color:var(--faint)}
+.filters .sw{width:10px;height:10px;border-radius:3px;background:var(--tc);border:1px solid var(--tc)}
+.filters .ty-off .sw{background:repeating-linear-gradient(135deg,var(--t-off) 0 2px,transparent 2px 4px)}
+.filters .ty-event .sw,.filters .ty-note .sw{background:transparent}
+/* team announcements */
+.notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px}
+.note{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.note.ty-test,.note.ty-trip,.note.ty-due{border-color:color-mix(in srgb,var(--tc) 45%,var(--line))}
+.note h3{font-size:1.08rem;font-stretch:108%;overflow-wrap:anywhere}
+.note .txt{color:var(--muted);font-size:.95rem}
+.note .foot{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;margin-top:auto;padding-top:6px;border-top:1px dashed var(--line)}
+.note .when{font-family:var(--font-mono);font-size:.8rem;color:var(--ink)}
 
 /* crew */
 .crew{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px}
@@ -182,7 +217,8 @@ a.card:hover{transform:translateY(-2px);border-color:var(--c,var(--ignite))}
 .agenda{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .agenda li{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:16px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
 .agenda .when{font-family:var(--font-mono);font-size:.85rem;color:var(--muted);line-height:1.3}
-.agenda .when b{display:block;color:var(--ink);font-size:1.05rem}
+.agenda .when b{display:block;color:var(--tc,var(--ink));font-size:1.05rem}
+.agenda .what .tags{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:8px}
 .agenda .what b{font-weight:600}
 .agenda .what p{font-size:.9rem;color:var(--muted)}
 .agenda .in{font-family:var(--font-mono);font-size:.8rem;color:var(--ignite-2);white-space:nowrap}
@@ -204,6 +240,17 @@ td .mono{font-size:.85rem;color:var(--muted);user-select:all}
 .story .art{height:120px;background:var(--space-2);border-bottom:1px solid var(--line);display:block;width:100%}
 .story .body{padding:16px;display:grid;gap:8px}
 
+.locker{background:linear-gradient(135deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:20px;padding:clamp(20px,4vw,32px);display:grid;gap:18px;margin-bottom:40px}
+.locker .head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.locker .head h2{display:flex;align-items:center;gap:12px}
+.locker .head svg{width:28px;height:28px;flex-shrink:0}
+.unlock{display:flex;flex-wrap:wrap;gap:10px;align-items:center;max-width:560px}
+.unlock input{flex:1 1 240px;min-width:0;font:500 1rem var(--font-mono);color:var(--ink);background:var(--space);border:1px solid var(--line);border-radius:999px;padding:12px 18px}
+.unlock input:focus{outline:2px solid var(--ignite);outline-offset:2px}
+.unlock button{cursor:pointer}
+.lock-msg{font-size:.92rem;color:var(--muted);min-height:1.4em}
+.lock-msg.err{color:var(--ignite-2)}
+.ph-wait{aspect-ratio:4/3;background:repeating-linear-gradient(135deg,var(--panel) 0 10px,var(--space-2) 10px 20px)}
 footer{border-top:1px solid var(--line);margin-top:24px}
 footer .wrap{padding-block:32px;display:flex;flex-wrap:wrap;gap:16px 32px;justify-content:space-between;color:var(--muted);font-size:.9rem}
 footer nav{display:flex;flex-wrap:wrap;gap:6px 18px}
@@ -254,11 +301,10 @@ footer a:hover{color:var(--ink)}
    SHEET_ID: the long ID from your Google Sheet's URL
      https://docs.google.com/spreadsheets/d/THIS_PART/edit
    The sheet must be shared as "Anyone with the link: Viewer".
-   CALENDAR_URL: public link to the team Google Calendar (optional).
+   Dates come from the sheet's Dates tab, which the team calendar fills automatically.
    ============================================================ */
 const CONFIG = {
-  SHEET_ID: "1OBRsU6nB9DrrbZe29-mvI6zwdz9cFQR21bbGVNrppbM",
-  CALENDAR_URL: ""
+  SHEET_ID: "1OBRsU6nB9DrrbZe29-mvI6zwdz9cFQR21bbGVNrppbM"
 };
 
 /* ---------- Class info (changes rarely) ---------- */
@@ -267,12 +313,12 @@ const CLASSES = {
     overview:"In 8th Grade Math, we cover a lot of algebra, from solving equations with variables to using linear graphs to represent real-world problems.",
     unitsTitle:"Units this year", numbered:true,
     units:["Solving Equations","Transformations","Angle Relationships","Linear Equations","Functions","Systems of Equations","Data Analysis","Exponent Rules","Pythagoras & Rationals","Volume of Shapes"],
-    highlights:[], resources:["atom-math","videos"] },
+    highlights:[], resources:["atom-math","khan"] },
   accel: { name:"Accelerated Math 8", subject:"Accelerated Math", teacher:"Mr. Lovrien",
     overview:"Students study linear and exponential equations and functions, use linear regression and data analysis, and begin geometry with simple proofs, congruence, and transformations. Accelerated Math 8 covers the same content as Integrated Math I at Adams 12 high schools.",
     unitsTitle:"Units this year", numbered:true,
     units:["Solving Linear Equations","Solving Linear Inequalities","Graphing Linear Functions","Writing Linear Functions","Systems of Equations","Exponential Functions & Sequences","Data Analysis & Displays","Basics of Geometry","Reasoning & Proofs","Parallel & Perpendicular Lines"],
-    highlights:[], resources:["atom-math","videos"] },
+    highlights:[], resources:["atom-math","khan"] },
   science: { name:"Science 8", subject:"Science", teacher:"Dr. Lupo",
     overview:"8th grade science explores energy, waves, forces and motion, space, and weather and climate through collaborative labs, investigations, and discussions.",
     unitsTitle:"Topics this year", numbered:false,
@@ -334,7 +380,7 @@ const LINKS = {
   "atom": {title:"Learn with Atom", url:"https://learnwithatom.org/", desc:"Free reading and math practice with missions, ranks, and badges. Collects zero student information.", cls:"team"},
   "atom-math": {title:"Atom Math", url:"https://learnwithatom.org/math/", desc:"Math practice on Learn with Atom.", cls:"math"},
   "atom-read": {title:"Atom Reading", url:"https://learnwithatom.org/read/", desc:"Reading practice on Learn with Atom.", cls:"ela"},
-  "videos": {title:"Mr. Lovrien's Math Help Videos", url:"https://www.youtube.com/channel/UCL4hX13DMAOWgR5ld-MT0NA", desc:"Short YouTube lessons for Math 8 and Accelerated Math 8.", cls:"math"}
+  "khan": {title:"Khan Academy: 8th Grade Math", url:"https://www.khanacademy.org/math/cc-eighth-grade-math", desc:"Free videos and practice for every 8th grade math topic.", cls:"math"}
 };
 
 /* ---------- helpers ---------- */
@@ -356,7 +402,33 @@ function classKey(s){
   return "team";
 }
 const clsName = k => CLASSES[k]?.name || "Whole team";
-const chip = k => `<span class="chip c-${k}">${esc(k==="team"?"Team":CLASSES[k].subject)}</span>`;
+const chip = k => k in CLASSES ? `<span class="chip c-${k}">${esc(CLASSES[k].subject)}</span>` : "";
+const clsTag = k => k in CLASSES ? `<span class="cls c-${k}">${esc(CLASSES[k].name)}</span>` : "";
+const ICON = {
+  test:'<path d="M2.5 9.5l.8-2.6L8 2.2l1.8 1.8-4.7 4.7z"/>',
+  trip:'<rect x="1.5" y="2" width="9" height="6.3" rx="1.5"/><path d="M1.5 5.5h9"/><circle cx="4" cy="9.8" r=".9"/><circle cx="8" cy="9.8" r=".9"/>',
+  off:'<path d="M9.8 7.6A4.4 4.4 0 0 1 4.4 2.2a4.4 4.4 0 1 0 5.4 5.4z"/>',
+  due:'<circle cx="6" cy="6" r="4.5"/><path d="M6 3.6V6l1.7 1.1"/>',
+  event:'<path d="M6 1.6l1.3 2.8 3.1.3-2.3 2.1.7 3-2.8-1.6-2.8 1.6.7-3L1.6 4.7l3.1-.3z"/>',
+  note:'<path d="M2 4.6v2.8h1.8L8 10V2L3.8 4.6z"/>'
+};
+const TYPES = {
+  test:{label:"Test", plural:"Tests", re:/\b(tests?|testing|quiz(zes)?|summatives?|exams?|assessments?|cmas|psat|map (growth|test))\b/i},
+  trip:{label:"Field trip", plural:"Field trips", re:/field ?trips?|\btrip\b/i},
+  off:{label:"No school", plural:"No school", re:/no school|no classes|days? off|\bbreak\b|holiday|work ?day|teacher planning|\bpd day|professional development|school closed|non-student/i},
+  due:{label:"Due", plural:"Due dates", re:/\bdue\b|deadline|\bforms?\b|permission slip|turn in|sign[- ]?up|registration/i},
+  note:{label:"Reminder", plural:"Reminders", re:/reminder|\bnote\b|announcement|\binfo\b|heads up/i},
+  event:{label:"Event", plural:"Events", re:/event/i}
+};
+const TYPE_ORDER = ["test","trip","due","off","event","note"];
+function typeOf(explicit, title, details){
+  const e = String(explicit||"").trim();
+  if(e){ for(const k of ["off","trip","test","due","note","event"]) if(TYPES[k].re.test(e)) return k; }
+  for(const k of ["off","trip","test","due"]) if(TYPES[k].re.test(title||"")) return k;
+  for(const k of ["off","trip","test"]) if(TYPES[k].re.test(details||"")) return k;
+  return "event";
+}
+const typeBadge = k => `<span class="type ty-${k}"><svg viewBox="0 0 12 12" aria-hidden="true">${ICON[k]}</svg>${TYPES[k].label}</span>`;
 const today0 = ()=>{const d=new Date();d.setHours(0,0,0,0);return d};
 function fallYear(){const d=new Date();return d.getMonth()>=6?d.getFullYear():d.getFullYear()-1}
 function parseDate(s){
@@ -386,6 +458,14 @@ function exampleDates(){
     {date:add(12), title:"Social Studies DBQ revisions due", cls:"social", details:""},
     {date:add(16), title:"Engineering circuit build day", cls:"engineering", details:"Closed-toe shoes for the makerspace."},
     {date:add(23), title:"Family night at STEM Launch", cls:"team", details:""}
+  ].map(x=>({...x,type:typeOf("",x.title,x.details),example:true}));
+}
+function exampleTeam(){
+  const t=today0(); const add=n=>{const d=new Date(t);d.setDate(d.getDate()+n);return d};
+  return [
+    {type:"due", title:"Field trip permission slips", details:"Signed slips go to your advisory teacher.", cls:"team", date:add(6), link:""},
+    {type:"note", title:"Bring a water bottle every day", details:"Our rooms get warm in the afternoon.", cls:"team", date:null, link:""},
+    {type:"test", title:"Unit test review packets", details:"Pick up a packet in class or print one at home.", cls:"math", date:add(3), link:""}
   ].map(x=>({...x,example:true}));
 }
 
@@ -393,7 +473,7 @@ function exampleDates(){
 const DATA = {
   source:"builtin",
   teachers: BUILTIN.teachers, weekOf: BUILTIN.weekOf, updates: BUILTIN.updates,
-  dates: exampleDates(), resources: [], faq: [], gallery: [], announcement: ""
+  dates: exampleDates(), team: exampleTeam(), resources: [], gallery: []
 };
 
 /* ---------- Google Sheet loader ---------- */
@@ -424,37 +504,60 @@ async function loadSheet(){
   if(!CONFIG.SHEET_ID) return;
   const tabs = {
     Updates:["class","this_week"], Dates:["date","title"], Teachers:["name","class"],
-    Resources:["title","link"], Gallery:["photo_link","caption"], Announcement:["message"]
+    Resources:["title","link"], Gallery:["photo_link","caption"], "Team Updates":["type","title"]
   };
   const res = await Promise.allSettled(Object.entries(tabs).map(([n,k])=>loadTab(n,k)));
-  const [up,dt,te,rs,ga,an] = res.map(r=>r.status==="fulfilled"?r.value:null);
+  const [up,dt,te,rs,ga,tu] = res.map(r=>r.status==="fulfilled"?r.value:null);
   let any=false;
   if(up){ any=true;
     DATA.updates = ORDER.map(k=>{const row=up.find(r=>classKey(r.class)===k)||{};return {cls:k,this:row.this_week||"",next:row.next_week||""}});
     const wk = up.map(r=>r.week_of).find(Boolean); DATA.weekOf = wk || "";
   }
-  if(dt){ any=true; DATA.dates = dt.map(r=>({date:parseDate(r.date),title:r.title,cls:classKey(r.class),details:r.details||""})).filter(x=>x.date&&x.title); }
+  if(dt){ any=true; DATA.dates = dt.map(r=>({date:parseDate(r.date),title:r.title,cls:classKey(r.class||r.title),details:r.details||"",type:typeOf(r.type,r.title,r.details)})).filter(x=>x.date&&x.title); }
   if(te && te.length){ any=true; DATA.teachers = te.map(r=>({name:r.name,cls:classKey(r.class),email:r.email||"",photo:r.photo_link||"",also:r.class})); }
   if(rs){ any=true; DATA.resources = rs.filter(r=>/^https?:\/\//.test(r.link)).map(r=>({title:r.title,url:r.link,desc:r.description||"",cls:classKey(r.class)})); }
   if(ga){ any=true; DATA.gallery = ga.map(r=>({img:driveImg(r.photo_link),caption:r.caption,cls:classKey(r.class)})).filter(x=>x.img); }
-  if(an){ any=true; const m = an.find(r=>r.message && !/^(no|n|false)$/i.test(r.show||"yes")); DATA.announcement = m?m.message:""; }
-  if(any){ DATA.source="sheet"; render(); }
+  if(tu){ any=true; DATA.team = tu.filter(r=>r.title).map(r=>({type:typeOf(r.type,r.title,r.details),title:r.title,details:r.details||"",cls:classKey(r.class),date:parseDate(r.date),link:/^https?:\/\//.test(r.link||"")?r.link:""})); }
+  if(any){
+    DATA.source="sheet";
+    if(!dt) DATA.dates=[];   // never show example dates on the live site
+    if(!tu) DATA.team=[];
+    render();
+  }
 }
 function driveImg(u){
-  u=String(u||"").trim(); if(!/^https?:\/\//.test(u)) return "";
+  u=String(u||"").trim();
+  // A plain file name (e.g. "robotics-1.jpg") means a photo in the site's photos folder.
+  if(!/^https?:\/\//.test(u)){ const f=u.replace(/^\.?\/?(photos\/)?/,""); return /^[\w\-. ()]+\.(jpe?g|png|webp|gif)$/i.test(f) ? "photos/"+encodeURIComponent(f) : ""; }
   const m = u.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?.*id=)([\w-]+)/);
   return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1200` : u;
 }
 
 /* ---------- views ---------- */
 const upcoming = (k)=>DATA.dates.filter(d=>daysUntil(d.date)>=0 && (!k || d.cls===k || d.cls==="team")).sort((a,b)=>a.date-b.date);
-const exampleTag = list => list.some(d=>d.example) ? `<span class="tag" title="Real dates appear once the team sheet is connected">Example dates</span>` : "";
+const exampleTag = list => list.some(d=>d.example) ? `<span class="tag" title="Real items appear once the team sheet is connected">Examples</span>` : "";
+const activeTeam = ()=>DATA.team.filter(n=>!n.date || daysUntil(n.date)>=0).sort((a,b)=>(a.date?a.date-0:9e15)-(b.date?b.date-0:9e15));
+let dateFilter = "all";
 
 function dateCard(d){
-  return `<article class="date-card">
+  return `<article class="date-card ty-${d.type}">
     <div class="cal" aria-hidden="true"><div class="m">${MON[d.date.getMonth()]}</div><div class="d">${d.date.getDate()}</div><div class="w">${DOW[d.date.getDay()]}</div></div>
-    <div style="min-width:0"><h3>${esc(d.title)}</h3><div class="sub">${chip(d.cls)}</div>${d.details?`<div class="sub">${esc(d.details)}</div>`:""}<span class="t">${tMinus(d.date)}</span></div>
+    <div><div class="tags">${typeBadge(d.type)}${clsTag(d.cls)}</div><h3>${esc(d.title)}</h3>${d.details?`<div class="sub">${esc(d.details)}</div>`:""}<span class="t">${tMinus(d.date)}</span></div>
   </article>`;
+}
+function noteCard(n){
+  const when = n.date ? `${n.type==="due"?"Due ":""}${n.date.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})} · ${tMinus(n.date)}` : "";
+  return `<article class="note ty-${n.type}">
+    <div class="tags" style="display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center">${typeBadge(n.type)}${clsTag(n.cls)}</div>
+    <h3>${esc(n.title)}</h3>
+    ${n.details?`<div class="txt">${fmtText(n.details)}</div>`:""}
+    ${when||n.link?`<div class="foot">${when?`<span class="when">${when}</span>`:"<span></span>"}${n.link?`<a class="more" href="${esc(n.link)}" target="_blank" rel="noopener">Open link ↗</a>`:""}</div>`:""}
+  </article>`;
+}
+function teamSection(limit){
+  const list = activeTeam(); if(!list.length && limit) return "";
+  return `<div class="sec-head"><div><span class="eyebrow">For the whole 8th grade ${exampleTag(list)}</span><h2>Team announcements</h2></div>${limit && list.length>limit?`<a class="more" href="#updates">See all ${list.length} →</a>`:""}</div>
+    ${list.length?`<div class="notes">${list.slice(0,limit||99).map(noteCard).join("")}</div>`:`<p class="empty">No team announcements right now.</p>`}`;
 }
 function person(t){
   const k=t.cls in CLASSES?t.cls:"team";
@@ -471,10 +574,10 @@ function weekLabel(){return DATA.weekOf?`Week of ${esc(DATA.weekOf)}`:"This week
 function viewHome(){
   const up = upcoming(); const next = up[0];
   const snaps = ORDER.map(k=>{const u=DATA.updates.find(x=>x.cls===k)||{};return `<a class="card c-${k}" href="#${k}">
-      <div class="row">${chip(k)}<span class="who">${esc(CLASSES[k].teacher)}</span></div>
-      <h3>${esc(CLASSES[k].name)}</h3>
+      <div class="row"><h3 class="dot-h">${esc(CLASSES[k].name)}</h3><span class="who">${esc(CLASSES[k].teacher)}</span></div>
       ${u.this?`<p class="clamp">${esc(u.this)}</p>`:`<p class="empty">Update coming soon.</p>`}
     </a>`}).join("");
+  const team = teamSection(3);
   return `
   <section class="hero">
     <canvas id="stars" aria-hidden="true"></canvas>
@@ -486,24 +589,25 @@ function viewHome(){
         <p class="lede">Welcome to 8th grade! Find this week's class updates, upcoming dates, how to reach your teachers, and links to help and practice. We're so excited you're here. Let's get learning!</p>
         <div class="cta-row"><a class="btn primary" href="#updates">This week's updates</a><a class="btn" href="#calendar">Upcoming dates</a></div>
       </div>
-      <aside class="countdown" aria-label="Next on the calendar">
+      <aside class="countdown ty-${next?next.type:"event"}" aria-label="Next on the calendar">
         <div class="row" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><span class="eyebrow">Next on the calendar</span>${exampleTag(up.slice(0,1))}</div>
-        ${next?`<div class="t">${tMinus(next.date)==="Today"||tMinus(next.date)==="Tomorrow"?tMinus(next.date):"T–"+daysUntil(next.date)+"<small>DAYS</small>"}</div>
+        ${next?`<div class="t">${daysUntil(next.date)<=1?tMinus(next.date):"T–"+daysUntil(next.date)+"<small>DAYS</small>"}</div>
+        <div class="meta">${typeBadge(next.type)}${clsTag(next.cls)}</div>
         <h3>${esc(next.title)}</h3>
-        <div class="meta"><span>${longDate(next.date)}</span>${chip(next.cls)}</div>`:`<h3>Nothing scheduled yet</h3><p class="lede" style="font-size:.95rem">New dates show up here as soon as teachers add them.</p>`}
+        <div class="meta"><span>${longDate(next.date)}</span></div>`:`<h3>Nothing scheduled yet</h3><p class="lede" style="font-size:.95rem">New dates show up here as soon as teachers add them.</p>`}
         ${up.length>1?`<hr><ul class="next-list">${up.slice(1,4).map(d=>`<li><span class="mono">${shortDate(d.date)}</span><span>${esc(d.title)}</span></li>`).join("")}</ul>`:""}
         <a class="more" href="#calendar">All dates →</a>
       </aside>
     </div>
   </section>
-  ${DATA.announcement?`<div class="wrap announce"><div class="notice" role="status"><b>Heads up</b><div class="txt">${fmtText(DATA.announcement)}</div></div></div>`:""}
+  ${team?`<section class="band"><div class="wrap">${team}</div></section>`:""}
   <section class="band"><div class="wrap">
     <div class="sec-head"><div><span class="eyebrow">${weekLabel()}</span><h2>This week in 8th grade</h2></div><a class="more" href="#updates">Full weekly update →</a></div>
     <div class="grid g3">${snaps}</div>
   </div></section>
   <section class="band"><div class="wrap">
     <div class="sec-head"><div><span class="eyebrow">Coming up ${exampleTag(up)}</span><h2>Mark your calendar</h2></div><a class="more" href="#calendar">See all →</a></div>
-    ${up.length?`<div class="strip">${up.slice(0,6).map(dateCard).join("")}</div>`:`<p class="empty">No upcoming dates yet.</p>`}
+    ${up.length?`<div class="strip">${up.slice(0,4).map(dateCard).join("")}</div>`:`<p class="empty">No upcoming dates yet.</p>`}
   </div></section>
   <section class="band"><div class="wrap">
     <div class="sec-head"><div><span class="eyebrow">Your teachers</span><h2>The 8th grade crew</h2></div></div>
@@ -512,9 +616,9 @@ function viewHome(){
   <section class="band"><div class="wrap feature">
     ${atomPanel()}
     <div class="card" style="justify-content:space-between">
-      <div style="display:grid;gap:10px"><span class="chip c-math" style="justify-self:start">Math help</span><h3 style="font-size:1.4rem">Stuck on homework?</h3>
-      <p style="color:var(--muted)">Mr. Lovrien's Math Help Videos walk through every Math 8 and Accelerated Math 8 unit, one skill at a time.</p></div>
-      <div class="cta-row" style="margin-top:8px"><a class="btn" href="${LINKS.videos.url}" target="_blank" rel="noopener">Watch on YouTube ↗</a><a class="btn" href="#resources">All resources</a></div>
+      <div style="display:grid;gap:10px"><span class="eyebrow">Math help</span><h3 style="font-size:1.4rem">Stuck on homework?</h3>
+      <p style="color:var(--muted)">Khan Academy has free videos and practice for every 8th grade math topic, from equations to the Pythagorean theorem.</p></div>
+      <div class="cta-row" style="margin-top:8px"><a class="btn" href="${LINKS.khan.url}" target="_blank" rel="noopener">Open Khan Academy ↗</a><a class="btn" href="#resources">All resources</a></div>
     </div>
   </div></section>`;
 }
@@ -532,19 +636,20 @@ function pageHead(eyebrow,title,lede,k){
 }
 function viewUpdates(){
   const items = ORDER.map(k=>{const u=DATA.updates.find(x=>x.cls===k)||{};return `<article class="card c-${k}" id="u-${k}">
-    <div class="row"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">${chip(k)}<h3>${esc(CLASSES[k].name)}</h3></div><span class="who">${esc(CLASSES[k].teacher)}</span></div>
+    <div class="row"><h3 class="dot-h">${esc(CLASSES[k].name)}</h3><span class="who">${esc(CLASSES[k].teacher)}</span></div>
     <div class="upd">
       <div><div class="lbl">This week</div><div class="txt">${fmtText(u.this)||`<p class="empty">Update coming soon.</p>`}</div></div>
       <div><div class="lbl">Next week</div><div class="txt">${fmtText(u.next)||`<p class="empty">Update coming soon.</p>`}</div></div>
     </div></article>`}).join("");
-  return pageHead(weekLabel(),"Weekly updates","What every 8th grade class is working on this week and next.")+
-    `<section class="band"><div class="wrap stack">${items}</div></section>`;
+  return pageHead(weekLabel(),"Weekly updates","Team announcements first, then what every 8th grade class is working on this week and next.")+
+    `<section class="band"><div class="wrap">${teamSection(0)}</div></section>
+    <section class="band"><div class="wrap"><div class="sec-head"><div><span class="eyebrow">${weekLabel()}</span><h2>Class updates</h2></div></div><div class="stack">${items}</div></div></section>`;
 }
 function viewClasses(){
   return pageHead("Six classes, one team","Our classes","Pick a class for its overview, units, this week's update, and resources.")+
   `<section class="band"><div class="wrap grid g3">${ORDER.map(k=>`<a class="card c-${k}" href="#${k}">
-    <div class="row">${chip(k)}<span class="who">${esc(CLASSES[k].teacher)}</span></div>
-    <h3 style="font-size:1.35rem">${esc(CLASSES[k].name)}</h3><p class="clamp">${esc(CLASSES[k].overview)}</p>
+    <div class="row"><h3 class="dot-h" style="font-size:1.35rem">${esc(CLASSES[k].name)}</h3><span class="who">${esc(CLASSES[k].teacher)}</span></div>
+    <p class="clamp">${esc(CLASSES[k].overview)}</p>
     <span class="more" style="margin-top:auto">Open class page →</span></a>`).join("")}</div></section>`;
 }
 function viewClass(k){
@@ -564,28 +669,37 @@ function viewClass(k){
     <div class="stack">
       ${t?`<div><div class="eyebrow" style="margin-bottom:8px">Teacher</div>${person(t)}</div>`:""}
       <article class="card"><div class="row"><h3>Coming up</h3>${exampleTag(dates)}</div>
-        ${dates.length?`<ul class="next-list">${dates.map(d=>`<li><span class="mono">${shortDate(d.date)}</span><span>${esc(d.title)}</span></li>`).join("")}</ul>`:`<p class="empty">No dates posted yet.</p>`}</article>
+        ${dates.length?`<ul class="next-list">${dates.map(d=>`<li><span class="mono">${shortDate(d.date)}</span><span style="display:grid;gap:4px;justify-items:start">${typeBadge(d.type)}${esc(d.title)}</span></li>`).join("")}</ul>`:`<p class="empty">No dates posted yet.</p>`}</article>
       ${res.length?`<article class="card"><h3>Resources</h3><ul class="res-list">${res.map(r=>`<li><a href="${esc(r.url)}" target="_blank" rel="noopener"><b>${esc(r.title)} ↗</b><span>${esc(r.desc)}</span></a></li>`).join("")}</ul></article>`:""}
     </div>
   </div></section>`;
 }
 function viewCalendar(){
-  const up = upcoming(); const groups={};
+  const all = upcoming();
+  const counts = {}; all.forEach(d=>counts[d.type]=(counts[d.type]||0)+1);
+  if(dateFilter!=="all" && !counts[dateFilter]) dateFilter="all";
+  const up = dateFilter==="all" ? all : all.filter(d=>d.type===dateFilter);
+  const groups={};
   up.forEach(d=>{const key=d.date.toLocaleDateString("en-US",{month:"long",year:"numeric"});(groups[key]=groups[key]||[]).push(d)});
-  const body = Object.entries(groups).map(([m,list])=>`<div class="month"><h2>${esc(m)}</h2><ul class="agenda">${list.map(d=>`<li>
+  const body = Object.entries(groups).map(([m,list])=>`<div class="month"><h2>${esc(m)}</h2><ul class="agenda">${list.map(d=>`<li class="ty-${d.type}">
     <div class="when"><b>${d.date.getDate()}</b>${DOW[d.date.getDay()]}</div>
-    <div class="what"><b>${esc(d.title)}</b>${d.details?`<p>${esc(d.details)}</p>`:""}<div style="margin-top:6px">${chip(d.cls)}</div></div>
+    <div class="what"><b>${esc(d.title)}</b>${d.details?`<p>${esc(d.details)}</p>`:""}<div class="tags">${typeBadge(d.type)}${clsTag(d.cls)}</div></div>
     <span class="in">${tMinus(d.date)}</span></li>`).join("")}</ul></div>`).join("");
-  return pageHead("Tests, due dates & events","Upcoming dates","Everything coming up across the 8th grade team, soonest first.")+
+  const filters = all.length ? `<div class="filters" role="group" aria-label="Filter dates">
+    <button data-filter="all" aria-pressed="${dateFilter==="all"}">All <i>${all.length}</i></button>
+    ${TYPE_ORDER.filter(k=>counts[k]).map(k=>`<button class="ty-${k}" data-filter="${k}" aria-pressed="${dateFilter===k}"><span class="sw"></span>${TYPES[k].plural} <i>${counts[k]}</i></button>`).join("")}
+  </div>` : "";
+  return pageHead("Tests, field trips, days off & more","Upcoming dates","Everything coming up across the 8th grade team, soonest first. Tap a type to filter.")+
   `<section class="band"><div class="wrap">
-    <div class="sec-head" style="margin-bottom:28px"><div>${exampleTag(up)}</div>${CONFIG.CALENDAR_URL?`<a class="btn" href="${esc(CONFIG.CALENDAR_URL)}" target="_blank" rel="noopener">Open the full team calendar ↗</a>`:""}</div>
+    ${exampleTag(all)?`<div style="margin-bottom:16px">${exampleTag(all)}</div>`:""}
+    ${filters}
     ${body||`<p class="empty">No upcoming dates yet.</p>`}
   </div></section>`;
 }
 function viewResources(){
-  const general = [LINKS.atom, LINKS["atom-math"], LINKS["atom-read"], LINKS.videos, ...DATA.resources.filter(r=>r.cls==="team")];
+  const general = [LINKS.atom, LINKS["atom-math"], LINKS["atom-read"], LINKS.khan, ...DATA.resources.filter(r=>r.cls==="team")];
   const byClass = ORDER.map(k=>({k,list:DATA.resources.filter(r=>r.cls===k)})).filter(g=>g.list.length);
-  const tile = r=>`<a class="card c-${r.cls}" href="${esc(r.url)}" target="_blank" rel="noopener"><div class="row">${chip(r.cls)}<span aria-hidden="true">↗</span></div><h3>${esc(r.title)}</h3><p style="color:var(--muted);font-size:.95rem">${esc(r.desc)}</p></a>`;
+  const tile = r=>`<a class="card c-${r.cls}" href="${esc(r.url)}" target="_blank" rel="noopener"><div class="row">${clsTag(r.cls)||"<span></span>"}<span aria-hidden="true">↗</span></div><h3>${esc(r.title)}</h3><p style="color:var(--muted);font-size:.95rem">${esc(r.desc)}</p></a>`;
   return pageHead("Help, practice & tools","Resources","The links students and families use most, in one place.")+
   `<section class="band"><div class="wrap stack" style="gap:32px">
     ${atomPanel()}
@@ -599,15 +713,90 @@ const STORY_ART = {
   social:'<svg class="art" viewBox="0 0 300 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="#F5C451" stroke-width="1.5"><rect x="90" y="22" width="70" height="86" rx="3" opacity=".5" transform="rotate(-6 125 65)"/><rect x="130" y="16" width="70" height="86" rx="3" fill="#F5C451" fill-opacity=".14"/><path d="M142 36h46M142 48h46M142 60h30" opacity=".7"/></g></svg>'
 };
 function viewGallery(){
-  const photos = DATA.gallery.map(g=>`<figure class="c-${g.cls}"><img src="${esc(g.img)}" alt="${esc(g.caption||"Class photo")}" loading="lazy"><figcaption>${chip(g.cls)}<span>${esc(g.caption)}</span></figcaption></figure>`).join("");
+  const photos = DATA.gallery.map(g=>`<figure class="c-${g.cls}"><img src="${esc(g.img)}" alt="${esc(g.caption||"Class photo")}" loading="lazy"><figcaption>${clsTag(g.cls)}<span>${esc(g.caption)}</span></figcaption></figure>`).join("");
   const stories = ["engineering","science","social"].flatMap(k=>CLASSES[k].highlights.map(h=>({k,...h})));
   return pageHead("Projects & highlights","Gallery","What 8th graders are building, testing, and arguing about.")+
   `<section class="band"><div class="wrap">
-    ${photos?`<div class="gallery">${photos}</div>`:`<div class="notice" style="margin-bottom:24px"><b>Photos</b><p>Class photos appear here as teachers add them to the team sheet. Until then, here's what's been happening.</p></div>`}
+    <div id="locker">${lockerHTML()}</div>
+    ${photos?`<div class="gallery">${photos}</div>`:`<div class="notice" style="margin-bottom:24px"><b>Photos</b><p>Class photos appear here as teachers add them. Until then, here's what's been happening.</p></div>`}
     <div class="sec-head" style="margin-top:${photos?"40px":"0"}"><h2>Project highlights</h2></div>
-    <div class="gallery">${stories.map(s=>`<figure class="story c-${s.k}">${STORY_ART[s.k]||""}<div class="body">${chip(s.k)}<h3 style="font-size:1.05rem;font-stretch:112%">${esc(s.t)}</h3><p style="color:var(--muted);font-size:.93rem">${esc(s.d)}</p></div></figure>`).join("")}</div>
+    <div class="gallery">${stories.map(s=>`<figure class="story c-${s.k}">${STORY_ART[s.k]||""}<div class="body">${clsTag(s.k)}<h3 style="font-size:1.05rem;font-stretch:112%">${esc(s.t)}</h3><p style="color:var(--muted);font-size:.93rem">${esc(s.d)}</p></div></figure>`).join("")}</div>
   </div></section>`;
 }
+
+/* ---------- Family photo locker (encrypted photos, unlocked with a family code) ---------- */
+const LOCK_ICON = '<svg viewBox="0 0 28 28" aria-hidden="true"><rect x="5" y="12" width="18" height="12" rx="3" fill="none" stroke="#FF6B3D" stroke-width="2"/><path d="M9 12V9a5 5 0 0 1 10 0v3" fill="none" stroke="#FF6B3D" stroke-width="2"/><circle cx="14" cy="18" r="1.8" fill="#FF6B3D"/></svg>';
+const LOCKER = {K:null, photos:null, urls:{}, msg:"", err:false, busy:false, available:null};
+const u8b64 = u=>{let s="";for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
+const b64u8 = s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function gcmDecrypt(key,u8){ return new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM",iv:u8.slice(0,12)},key,u8.slice(12))); }
+async function fetchBin(path){ const r=await fetch(path,{cache:"no-store"}); if(!r.ok) throw new Error(path+" "+r.status); return new Uint8Array(await r.arrayBuffer()); }
+function parseCode(code){
+  const m=String(code||"").trim().toLowerCase().match(/^#?(\d+)\D*(.*)$/); if(!m) return null;
+  return {n:String(+m[1]), mat:m[2].replace(/[^a-z0-9]/g,"")};
+}
+async function lockerUnlock(code){
+  const c=parseCode(code);
+  if(!c||!c.mat){ LOCKER.msg="Enter the full family code, like 12-maple-rocket-comet-4821."; LOCKER.err=true; return; }
+  const keys=await (await fetch("locker/keys.json",{cache:"no-store"})).json();
+  const e=keys.entries[c.n];
+  if(!e){ LOCKER.msg="That family code isn't active. Check it, or ask your student's teacher for a new one."; LOCKER.err=true; return; }
+  const base=await crypto.subtle.importKey("raw",new TextEncoder().encode(c.mat),"PBKDF2",false,["deriveKey"]);
+  const wk=await crypto.subtle.deriveKey({name:"PBKDF2",salt:b64u8(e.s),iterations:keys.iter,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["decrypt"]);
+  let raw; try{ raw=await gcmDecrypt(wk,b64u8(e.w)); }catch{ LOCKER.msg="That code doesn't match. Check for typos and try again."; LOCKER.err=true; return; }
+  LOCKER.K=await crypto.subtle.importKey("raw",raw,"AES-GCM",false,["decrypt"]);
+  try{ sessionStorage.setItem("stemLocker",u8b64(raw)); }catch{}
+  LOCKER.msg=""; LOCKER.err=false;
+}
+async function lockerLoad(){
+  const man=JSON.parse(new TextDecoder().decode(await gcmDecrypt(LOCKER.K,await fetchBin("locker/manifest.bin"))));
+  LOCKER.photos=(man.photos||[]).slice().reverse();
+  paintLocker();
+  for(const p of LOCKER.photos){
+    if(LOCKER.urls[p.f]) continue;
+    try{ const img=await gcmDecrypt(LOCKER.K,await fetchBin("locker/"+p.f)); LOCKER.urls[p.f]=URL.createObjectURL(new Blob([img],{type:p.t||"image/jpeg"})); }
+    catch{ LOCKER.urls[p.f]="x"; }
+    paintLocker();
+  }
+}
+async function lockerRestore(){
+  if(LOCKER.K) return;
+  let saved=null; try{ saved=sessionStorage.getItem("stemLocker"); }catch{}
+  if(saved){ try{ LOCKER.K=await crypto.subtle.importKey("raw",b64u8(saved),"AES-GCM",false,["decrypt"]); }catch{} }
+}
+function lockerHTML(){
+  if(LOCKER.available===false) return "";
+  const head=`<div class="head"><h2>${LOCK_ICON}Family photos</h2>${LOCKER.K?`<button class="btn" data-lock="out">Lock photos</button>`:""}</div>`;
+  if(!LOCKER.K) return `<div class="locker">${head}
+    <p style="color:var(--muted);max-width:60ch">Photos of our students are only for STEM Launch families. Enter the family code your student's teacher gave you.</p>
+    <form class="unlock" id="unlockForm" autocomplete="off"><label class="sr" for="familyCode">Family code</label>
+      <input id="familyCode" name="familyCode" placeholder="12-maple-rocket-comet-4821" autocapitalize="off" spellcheck="false">
+      <button class="btn primary" type="submit"${LOCKER.busy?" disabled":""}>${LOCKER.busy?"Unlocking…":"Unlock photos"}</button></form>
+    <div class="lock-msg${LOCKER.err?" err":""}" role="status">${esc(LOCKER.msg)}</div></div>`;
+  const ph=LOCKER.photos;
+  return `<div class="locker">${head}
+    ${ph===null?`<p class="lock-msg">Loading photos…</p>`:!ph.length?`<p class="empty">No family photos yet. Check back soon.</p>`:
+    `<div class="gallery">${ph.map(p=>{const u=LOCKER.urls[p.f];return `<figure>${u&&u!=="x"?`<img src="${u}" alt="${esc(p.caption||"Class photo")}">`:`<div class="ph-wait" aria-label="Loading photo"></div>`}${p.caption||p.cls?`<figcaption>${clsTag(classKey(p.cls))}<span>${esc(p.caption||"")}</span></figcaption>`:""}</figure>`}).join("")}</div>`}
+    <p class="lock-msg">Please don't repost these photos. They're shared with STEM Launch families only.</p></div>`;
+}
+function paintLocker(){ const el=$("#locker"); if(el) el.innerHTML=lockerHTML(); }
+async function lockerInit(){
+  if(LOCKER.available===null){
+    try{ const r=await fetch("locker/keys.json",{method:"HEAD",cache:"no-store"}); LOCKER.available=r.ok; }catch{ LOCKER.available=false; }
+    if(!LOCKER.available){ paintLocker(); return; }
+  }
+  await lockerRestore();
+  if(LOCKER.K && LOCKER.photos===null){ try{ await lockerLoad(); }catch{ LOCKER.K=null; try{sessionStorage.removeItem("stemLocker")}catch{} } }
+  paintLocker();
+}
+document.addEventListener("submit",async e=>{
+  if(e.target.id!=="unlockForm") return; e.preventDefault();
+  const code=e.target.familyCode.value; LOCKER.busy=true; LOCKER.msg=""; paintLocker();
+  try{ await lockerUnlock(code); }catch{ LOCKER.msg="Couldn't reach the photo locker. Try again in a moment."; LOCKER.err=true; }
+  LOCKER.busy=false; paintLocker();
+  if(LOCKER.K){ try{ await lockerLoad(); }catch{ LOCKER.msg="Couldn't load the photos. Try again in a moment."; LOCKER.err=true; LOCKER.K=null; paintLocker(); } }
+  else { const i=$("#familyCode"); if(i){ i.value=code; i.focus(); } }
+});
 
 /* ---------- router ---------- */
 const ROUTES = {home:viewHome,updates:viewUpdates,classes:viewClasses,calendar:viewCalendar,resources:viewResources,gallery:viewGallery};
@@ -620,10 +809,13 @@ function render(scroll){
   document.title = (r==="home"?"":(CLASSES[r]?.name || {updates:"Weekly Updates",classes:"Classes",calendar:"Dates",resources:"Resources",gallery:"Gallery"}[r])+" · ")+"STEM Launch 8th Grade";
   if(scroll) window.scrollTo(0,0);
   drawStars();
+  if(r==="gallery") lockerInit();
 }
 window.addEventListener("hashchange",()=>{ $("#nav").classList.remove("open"); $("#menuBtn").setAttribute("aria-expanded","false"); render(true); });
 $("#menuBtn").addEventListener("click",e=>{const o=$("#nav").classList.toggle("open");e.currentTarget.setAttribute("aria-expanded",String(o))});
 document.addEventListener("click",async e=>{
+  const f=e.target.closest("[data-filter]"); if(f){ dateFilter=f.dataset.filter; render(false); return; }
+  if(e.target.closest("[data-lock]")){ LOCKER.K=null; LOCKER.photos=null; Object.values(LOCKER.urls).forEach(u=>u!=="x"&&URL.revokeObjectURL(u)); LOCKER.urls={}; try{sessionStorage.removeItem("stemLocker")}catch{} paintLocker(); return; }
   const b=e.target.closest(".copy"); if(!b) return;
   const v=b.dataset.copy;
   try{ await navigator.clipboard.writeText(v); b.textContent="Copied"; }
