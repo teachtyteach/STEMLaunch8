@@ -251,6 +251,11 @@ td .mono{font-size:.85rem;color:var(--muted);user-select:all}
 .lock-msg{font-size:.92rem;color:var(--muted);min-height:1.4em}
 .lock-msg.err{color:var(--ignite-2)}
 .ph-wait{aspect-ratio:4/3;background:repeating-linear-gradient(135deg,var(--panel) 0 10px,var(--space-2) 10px 20px)}
+.skel{display:block;height:.85em;border-radius:6px;background:linear-gradient(90deg,var(--panel-2) 0%,var(--line) 50%,var(--panel-2) 100%);background-size:200% 100%;animation:shimmer 1.3s linear infinite}
+.skel + .skel{margin-top:.6em}
+.skel.w60{width:60%} .skel.w80{width:80%} .skel.w40{width:40%}
+.skel-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;display:grid;gap:10px;min-height:110px}
+@keyframes shimmer{to{background-position:-200% 0}}
 footer{border-top:1px solid var(--line);margin-top:24px}
 footer .wrap{padding-block:32px;display:flex;flex-wrap:wrap;gap:16px 32px;justify-content:space-between;color:var(--muted);font-size:.9rem}
 footer nav{display:flex;flex-wrap:wrap;gap:6px 18px}
@@ -500,14 +505,13 @@ async function loadTab(name, mustHave){
   if(rows.length && !mustHave.every(k=>k in rows[0])) return null;
   return rows;
 }
-async function loadSheet(){
-  if(!CONFIG.SHEET_ID) return;
-  const tabs = {
-    Updates:["class","this_week"], Dates:["date","title"], Teachers:["name","class"],
-    Resources:["title","link"], Gallery:["photo_link","caption"], "Team Updates":["type","title"]
-  };
-  const res = await Promise.allSettled(Object.entries(tabs).map(([n,k])=>loadTab(n,k)));
-  const [up,dt,te,rs,ga,tu] = res.map(r=>r.status==="fulfilled"?r.value:null);
+const SHEET_TABS = {
+  Updates:["class","this_week"], Dates:["date","title"], Teachers:["name","class"],
+  Resources:["title","link"], Gallery:["photo_link","caption"], "Team Updates":["type","title"]
+};
+const CACHE_KEY="stemSheetCache:"+CONFIG.SHEET_ID;
+function applyRaw(raw){
+  const {Updates:up, Dates:dt, Teachers:te, Resources:rs, Gallery:ga, "Team Updates":tu} = raw;
   let any=false;
   if(up){ any=true;
     DATA.updates = ORDER.map(k=>{const row=up.find(r=>classKey(r.class)===k)||{};return {cls:k,this:row.this_week||"",next:row.next_week||""}});
@@ -518,12 +522,26 @@ async function loadSheet(){
   if(rs){ any=true; DATA.resources = rs.filter(r=>/^https?:\/\//.test(r.link)).map(r=>({title:r.title,url:r.link,desc:r.description||"",cls:classKey(r.class)})); }
   if(ga){ any=true; DATA.gallery = ga.map(r=>({img:driveImg(r.photo_link),caption:r.caption,cls:classKey(r.class)})).filter(x=>x.img); }
   if(tu){ any=true; DATA.team = tu.filter(r=>r.title).map(r=>({type:typeOf(r.type,r.title,r.details),title:r.title,details:r.details||"",cls:classKey(r.class),date:parseDate(r.date),link:/^https?:\/\//.test(r.link||"")?r.link:""})); }
-  if(any){
-    DATA.source="sheet";
-    if(!dt) DATA.dates=[];   // never show example dates on the live site
-    if(!tu) DATA.team=[];
-    render();
-  }
+  if(any){ DATA.source="sheet"; if(!dt) DATA.dates=[]; if(!tu) DATA.team=[]; }
+  return any;
+}
+async function loadSheet(){
+  if(!CONFIG.SHEET_ID) return;
+  const names=Object.keys(SHEET_TABS);
+  const res = await Promise.allSettled(names.map(n=>loadTab(n,SHEET_TABS[n])));
+  const raw = Object.fromEntries(names.map((n,i)=>[n,res[i].status==="fulfilled"?res[i].value:null]));
+  const ok = applyRaw(raw);
+  if(ok){ try{ localStorage.setItem(CACHE_KEY,JSON.stringify({t:Date.now(),raw})); }catch{} }
+  else if(DATA.loading){ DATA.updates=ORDER.map(k=>({cls:k,this:"",next:""})); DATA.dates=[]; DATA.team=[]; }
+  DATA.loading=false; render(false);
+}
+/* Show the last copy of the team sheet instantly, then refresh it in the background.
+   First-time visitors see loading placeholders instead of outdated built-in text. */
+function bootFromCache(){
+  if(!CONFIG.SHEET_ID) return;
+  let c=null; try{ c=JSON.parse(localStorage.getItem(CACHE_KEY)||"null"); }catch{}
+  if(c && c.raw && applyRaw(c.raw)) return;
+  DATA.loading=true; DATA.weekOf=""; DATA.dates=[]; DATA.team=[];
 }
 function driveImg(u){
   u=String(u||"").trim();
@@ -538,6 +556,8 @@ const upcoming = (k)=>DATA.dates.filter(d=>daysUntil(d.date)>=0 && (!k || d.cls=
 const exampleTag = list => list.some(d=>d.example) ? `<span class="tag" title="Real items appear once the team sheet is connected">Examples</span>` : "";
 const activeTeam = ()=>DATA.team.filter(n=>!n.date || daysUntil(n.date)>=0).sort((a,b)=>(a.date?a.date-0:9e15)-(b.date?b.date-0:9e15));
 let dateFilter = "all";
+const skelLines = ()=>`<span class="skel w80"></span><span class="skel w60"></span>`;
+const skelCards = n=>Array.from({length:n},()=>`<div class="skel-card" aria-hidden="true"><span class="skel w40"></span><span class="skel w80"></span><span class="skel w60"></span></div>`).join("");
 
 function dateCard(d){
   return `<article class="date-card ty-${d.type}">
@@ -555,6 +575,7 @@ function noteCard(n){
   </article>`;
 }
 function teamSection(limit){
+  if(DATA.loading) return limit?"":`<div class="sec-head"><div><span class="eyebrow">For the whole 8th grade</span><h2>Team announcements</h2></div></div><div class="notes">${skelCards(2)}</div>`;
   const list = activeTeam(); if(!list.length && limit) return "";
   return `<div class="sec-head"><div><span class="eyebrow">For the whole 8th grade ${exampleTag(list)}</span><h2>Team announcements</h2></div>${limit && list.length>limit?`<a class="more" href="#updates">See all ${list.length} →</a>`:""}</div>
     ${list.length?`<div class="notes">${list.slice(0,limit||99).map(noteCard).join("")}</div>`:`<p class="empty">No team announcements right now.</p>`}`;
@@ -575,7 +596,7 @@ function viewHome(){
   const up = upcoming(); const next = up[0];
   const snaps = ORDER.map(k=>{const u=DATA.updates.find(x=>x.cls===k)||{};return `<a class="card c-${k}" href="#${k}">
       <div class="row"><h3 class="dot-h">${esc(CLASSES[k].name)}</h3><span class="who">${esc(CLASSES[k].teacher)}</span></div>
-      ${u.this?`<p class="clamp">${esc(u.this)}</p>`:`<p class="empty">Update coming soon.</p>`}
+      ${DATA.loading?`<div aria-hidden="true">${skelLines()}</div>`:u.this?`<p class="clamp">${esc(u.this)}</p>`:`<p class="empty">Update coming soon.</p>`}
     </a>`}).join("");
   const team = teamSection(3);
   return `
@@ -591,7 +612,7 @@ function viewHome(){
       </div>
       <aside class="countdown ty-${next?next.type:"event"}" aria-label="Next on the calendar">
         <div class="row" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><span class="eyebrow">Next on the calendar</span>${exampleTag(up.slice(0,1))}</div>
-        ${next?`<div class="t">${daysUntil(next.date)<=1?tMinus(next.date):"T–"+daysUntil(next.date)+"<small>DAYS</small>"}</div>
+        ${DATA.loading?`<div aria-hidden="true" style="display:grid;gap:12px"><span class="skel w40" style="height:2.4rem"></span><span class="skel w80"></span><span class="skel w60"></span></div>`:next?`<div class="t">${daysUntil(next.date)<=1?tMinus(next.date):"T–"+daysUntil(next.date)+"<small>DAYS</small>"}</div>
         <div class="meta">${typeBadge(next.type)}${clsTag(next.cls)}</div>
         <h3>${esc(next.title)}</h3>
         <div class="meta"><span>${longDate(next.date)}</span></div>`:`<h3>Nothing scheduled yet</h3><p class="lede" style="font-size:.95rem">New dates show up here as soon as teachers add them.</p>`}
@@ -607,7 +628,7 @@ function viewHome(){
   </div></section>
   <section class="band"><div class="wrap">
     <div class="sec-head"><div><span class="eyebrow">Coming up ${exampleTag(up)}</span><h2>Mark your calendar</h2></div><a class="more" href="#calendar">See all →</a></div>
-    ${up.length?`<div class="strip">${up.slice(0,4).map(dateCard).join("")}</div>`:`<p class="empty">No upcoming dates yet.</p>`}
+    ${DATA.loading?`<div class="strip">${skelCards(4)}</div>`:up.length?`<div class="strip">${up.slice(0,4).map(dateCard).join("")}</div>`:`<p class="empty">No upcoming dates yet.</p>`}
   </div></section>
   <section class="band"><div class="wrap">
     <div class="sec-head"><div><span class="eyebrow">Your teachers</span><h2>The 8th grade crew</h2></div></div>
@@ -638,8 +659,8 @@ function viewUpdates(){
   const items = ORDER.map(k=>{const u=DATA.updates.find(x=>x.cls===k)||{};return `<article class="card c-${k}" id="u-${k}">
     <div class="row"><h3 class="dot-h">${esc(CLASSES[k].name)}</h3><span class="who">${esc(CLASSES[k].teacher)}</span></div>
     <div class="upd">
-      <div><div class="lbl">This week</div><div class="txt">${fmtText(u.this)||`<p class="empty">Update coming soon.</p>`}</div></div>
-      <div><div class="lbl">Next week</div><div class="txt">${fmtText(u.next)||`<p class="empty">Update coming soon.</p>`}</div></div>
+      <div><div class="lbl">This week</div><div class="txt">${DATA.loading?skelLines():fmtText(u.this)||`<p class="empty">Update coming soon.</p>`}</div></div>
+      <div><div class="lbl">Next week</div><div class="txt">${DATA.loading?skelLines():fmtText(u.next)||`<p class="empty">Update coming soon.</p>`}</div></div>
     </div></article>`}).join("");
   return pageHead(weekLabel(),"Weekly updates","Team announcements first, then what every 8th grade class is working on this week and next.")+
     `<section class="band"><div class="wrap">${teamSection(0)}</div></section>
@@ -661,8 +682,8 @@ function viewClass(k){
   `<section class="band c-${k}"><div class="wrap class-layout">
     <div class="stack">
       <article class="card"><div class="row"><h2 style="font-size:1.3rem">${weekLabel()}</h2><a class="more" href="#updates">All classes →</a></div>
-        <div class="upd"><div><div class="lbl">This week</div><div class="txt">${fmtText(u.this)||`<p class="empty">Update coming soon.</p>`}</div></div>
-        <div><div class="lbl">Next week</div><div class="txt">${fmtText(u.next)||`<p class="empty">Update coming soon.</p>`}</div></div></div></article>
+        <div class="upd"><div><div class="lbl">This week</div><div class="txt">${DATA.loading?skelLines():fmtText(u.this)||`<p class="empty">Update coming soon.</p>`}</div></div>
+        <div><div class="lbl">Next week</div><div class="txt">${DATA.loading?skelLines():fmtText(u.next)||`<p class="empty">Update coming soon.</p>`}</div></div></div></article>
       <article class="card"><h2 style="font-size:1.3rem">${esc(c.unitsTitle)}</h2><ol class="units ${c.numbered?"":"plain"}">${c.units.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></article>
       ${c.highlights.length?`<article class="card"><h2 style="font-size:1.3rem">From the classroom</h2><div class="stack">${c.highlights.map(h=>`<div class="hl"><h3>${esc(h.t)}</h3><p>${esc(h.d)}</p></div>`).join("")}</div></article>`:""}
     </div>
@@ -693,7 +714,7 @@ function viewCalendar(){
   `<section class="band"><div class="wrap">
     ${exampleTag(all)?`<div style="margin-bottom:16px">${exampleTag(all)}</div>`:""}
     ${filters}
-    ${body||`<p class="empty">No upcoming dates yet.</p>`}
+    ${DATA.loading?`<div class="stack">${skelCards(4)}</div>`:body||`<p class="empty">No upcoming dates yet.</p>`}
   </div></section>`;
 }
 function viewResources(){
@@ -834,8 +855,9 @@ function drawStars(){
 }
 let rz; window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(drawStars,150)});
 
+bootFromCache();
 render(false);
-loadSheet().catch(err=>console.warn("Team sheet not loaded:",err));
+loadSheet().catch(err=>{ console.warn("Team sheet not loaded:",err); if(DATA.loading){ DATA.loading=false; DATA.updates=ORDER.map(k=>({cls:k,this:"",next:""})); render(false); } });
 </script>
 
 </body>
