@@ -1,0 +1,16 @@
+{
+  "name": "STEM Launch 8th Grade",
+  "short_name": "STEM 8",
+  "description": "Weekly updates, dates, teachers, and resources for the 8th grade team at STEM Launch K-8.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#07112A",
+  "theme_color": "#07112A",
+  "lang": "en",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

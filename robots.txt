@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /photo-locker.html
+Disallow: /locker/
+
+Sitemap: https://stem8.org/sitemap.xml

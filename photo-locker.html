@@ -95,6 +95,14 @@ tr.off td:last-child{text-decoration:none}
       <div class="tbl"><table><thead><tr><th>#</th><th>Family code</th><th>Status</th></tr></thead><tbody id="codeRows"></tbody></table></div>
     </section>
 
+    <section class="card" data-panel="codes" hidden>
+      <h2>Start a new school year</h2>
+      <p class="muted">Makes a brand-new set of family codes and an empty photo locker. Every old code stops working, and last year's photos can no longer be opened. Run this in August, before handing out codes.</p>
+      <div class="row"><label for="yearCount" class="muted">How many codes?</label><input id="yearCount" type="number" min="1" max="999" value="150" style="width:90px;font:inherit;color:var(--ink);background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px">
+        <label class="muted" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="yearConfirm"> I understand old codes and photos stop working</label></div>
+      <div class="row"><button class="btn primary" id="newYear" disabled>Start a new school year</button></div>
+    </section>
+
     <div class="pending" id="pending" hidden>
       <div><b id="pendingText"></b><p class="muted" style="font-size:.9rem">Download the update, unzip it, and upload the <b>locker</b> folder to your GitHub repo.</p></div>
       <div class="row"><button class="btn primary" id="build">Download update (.zip)</button></div>
@@ -215,6 +223,29 @@ $("#addCodes").addEventListener("click",async e=>{
   for(let n=start;n<start+10;n++){ status(`Creating code ${n}…`); const pw=newCode(n); const [k,ent]=await wrapFor(pw); S.keys.entries[k]=ent; S.admin.passwords.push({n,pw,active:true}); }
   status("Added 10 codes. Download the update and the new admin key."); e.target.disabled=false;
   S.keysChanged=S.adminChanged=true; renderCodes(); updatePending();
+});
+$("#yearConfirm").addEventListener("change",e=>{ $("#newYear").disabled=!e.target.checked; });
+$("#newYear").addEventListener("click",async e=>{
+  const count=Math.max(1,Math.min(999,parseInt($("#yearCount").value,10)||150));
+  e.target.disabled=true; status("Making a new locker…");
+  try{
+    const raw=rnd(32); const K=await crypto.subtle.importKey("raw",raw,"AES-GCM",false,["encrypt","decrypt"]);
+    const today=new Date().toISOString().slice(0,10);
+    S.admin={v:1,note:S.admin.note,created:today,iter:S.admin.iter||250000,key:u8b64(raw),passwords:[]}; S.K=K;
+    S.keys={v:1,iter:S.admin.iter,entries:{}};
+    for(let n=1;n<=count;n++){ if(n%10===1) status(`Creating family code ${n} of ${count}…`); const pw=newCode(n); const [k,ent]=await wrapFor(pw); S.keys.entries[k]=ent; S.admin.passwords.push({n,pw,active:true}); }
+    const zip=new JSZip(), dir=zip.folder("locker");
+    dir.file("manifest.bin",await enc(S.K,new TextEncoder().encode(JSON.stringify({photos:[]}))));
+    dir.file("keys.json",JSON.stringify(S.keys));
+    download(`locker-new-year-${today}.zip`,await zip.generateAsync({type:"blob"}));
+    download("STEM-Launch-photo-locker-ADMIN-KEY.json",new Blob([JSON.stringify(S.admin,null,1)],{type:"application/json"}));
+    const rows=[["number","family code","student"],...S.admin.passwords.map(p=>[p.n,p.pw,""])];
+    download("family-photo-codes.csv",new Blob([rows.map(r=>r.join(",")).join("\n")],{type:"text/csv"}));
+    S.photos=[]; S.adds=[]; S.removed.clear(); S.keysChanged=false; S.adminChanged=false;
+    renderCodes(); renderOld(); renderNew(); updatePending();
+    status(`Done: ${count} new codes. Replace your admin key with the new one, then upload the locker folder from the zip to GitHub.`);
+  }catch(err){ status("Something went wrong: "+err.message); }
+  $("#yearConfirm").checked=false;
 });
 function download(name,blob){ const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000); }
 $("#dlCsv").addEventListener("click",()=>{
